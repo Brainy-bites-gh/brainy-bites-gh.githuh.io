@@ -1,95 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Brainy Bites - Order Checkcheck, Shawarma, Pizza</title>
-<style>
-:root{--orange:#ff8c2a;--dark:#111;--card:#1c1c1c}
-*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
-body{background:#0f0f0f;color:#fff}
-header{display:flex;justify-content:space-between;align-items:center;padding:16px 4%;background:#151515;position:sticky;top:0;border-bottom:1px solid #222}
-.btn{background:var(--orange);color:#000;padding:10px 16px;border-radius:8px;border:none;font-weight:700;cursor:pointer}
-.menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;padding:20px 4%}
-.card{background:#1c1c1c;border-radius:14px;overflow:hidden;border:1px solid #222}
-.card img{width:100%;height:180px;object-fit:cover}
-.card-body{padding:12px}
-.price{color:var(--orange);font-weight:800}
-.cart{position:fixed;right:10px;top:65px;background:#1a1a1a;border:1px solid #333;padding:14px;border-radius:12px;width:310px;max-height:85vh;overflow:auto;z-index:20}
-.hidden{display:none}
-.status span{padding:4px 6px;border-radius:6px;background:#222;margin:2px;font-size:11px}
-.active{background:var(--orange)!important;color:#000}
-</style>
-</head>
-<body>
-<header>
-<div style="font-weight:900;font-size:22px">🧠 Brainy <span style="color:var(--orange)">Bites</span></div>
-<div><a href="admin.html" style="color:#aaa;margin-right:10px;text-decoration:none">Staff Login</a><button class="btn" onclick="toggleCart()">Cart (<span id="cart-count">0</span>)</button></div>
-</header>
-<section style="padding:30px 4%">
-<h1 style="font-size:38px">Crave It. Order It. <span style="color:var(--orange)">Enjoy It.</span></h1>
-<p style="color:#aaa;margin:10px 0">Checkcheck • Shawarma • Pizza • Fast Foods - 30min Delivery Accra</p>
-</section>
-<div id="menu" class="menu"></div>
-
-<div id="cart" class="cart hidden">
-<h3>Your Cart</h3><div id="cart-items" style="margin:10px 0"></div>
-<label>Schedule: <input type="datetime-local" id="schedule"></label><br><br>
-<label>Area: <select id="area" onchange="updateCart()"><option value="8">Inside Accra - GHS 8</option><option value="15">East Legon/Spintex - GHS 15</option><option value="25">Far - GHS 25</option></select></label><br><br>
-<label>Payment: <select id="pay"><option>Cash</option><option>Mobile Money</option><option>Card</option></select></label>
-<p style="margin:10px 0">Delivery: GHS <span id="fee">8</span> | Total: GHS <span id="total">0</span></p>
-<button class="btn" style="width:100%" onclick="placeOrder()">Place Order - Receipt Auto</button>
-<div style="margin-top:12px;border-top:1px solid #333;padding-top:8px">
-<h4>Order Tracking</h4><p id="order-id" style="font-size:11px;color:#aaa"></p>
-<div class="status"><span id="s1" class="active">Received</span><span id="s2">Preparing</span><span id="s3">Ready</span><span id="s4">Out</span><span id="s5">Delivered</span></div>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Brainy Bites GH</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>body{background:#fff8f0} .hero{background:#ff7f00;color:#fff;padding:40px;text-align:center} .product-card{border-radius:15px;box-shadow:0 4px 12px rgba(0,0,0,.1)} .btn-order{background:#ff7f00;color:#fff;border-radius:20px}</style>
+</head><body>
+<div class="hero"><h1>🧠 Brainy Bites GH</h1><p>Healthy Crunchy Ghanaian Made - Now Cloud Powered!</p></div>
+<div class="container my-4"><div id="products" class="row g-3">Loading...</div></div>
+<div class="modal fade" id="orderModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+<div class="modal-header"><h5 id="mTitle"></h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body">
+<p>Price: GHS <span id="mPrice"></span> | Stock: <span id="mStock"></span></p>
+<input id="custName" class="form-control mb-2" placeholder="Your Name">
+<input id="custPhone" class="form-control mb-2" placeholder="Phone e.g. 055...">
+<input id="custLocation" class="form-control mb-2" placeholder="Location e.g. Accra">
+<input id="orderQty" type="number" min="1" value="1" class="form-control mb-2">
+<p>Total: GHS <b id="mTotal">0</b></p>
 </div>
-</div>
-
-<script>
-const foods=[
-{id:1,name:"Checkcheck",price:35,stock:20,ing:["rice","plantain","oil"],tag:"Ghanaian Favorite"},
-{id:2,name:"Chicken Shawarma",price:40,stock:15,ing:["flour","chicken"],tag:"Bestseller"},
-{id:3,name:"Pepperoni Pizza",price:55,stock:10,ing:["flour","cheese"],tag:"Classic"},
-{id:4,name:"Beef Shawarma",price:45,stock:5,ing:["flour","beef"],tag:"New"},
-{id:5,name:"Checkcheck Large",price:50,stock:0,ing:["rice"],tag:"Family"}
-];
-const inventory={rice:100,chicken:50,oil:30,flour:80,vegetables:40,beef:20,cheese:25};
-let cart=[];
-function renderMenu(){
-document.getElementById('menu').innerHTML=foods.map(f=>{
-const unavail=f.stock<=0||f.ing.some(i=>inventory[i]<=0);
-return `<div class="card" style="opacity:${unavail?0.5:1}"><img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400" onerror="this.src='https://via.placeholder.com/400x180'"><div class="card-body">
-<h3>${f.name} ${unavail?'(Unavailable)':''}</h3><small style="background:#333;padding:2px 6px;border-radius:4px">${f.tag}</small>
-<p style="font-size:12px;color:#aaa">Stock: ${f.stock} | ${f.ing.join(', ')}</p>
-<p><label><input type="checkbox" value="5" class="extra" data-id="${f.id}"> Extra Chicken +5</label> <label><input type="checkbox" value="3" class="extra" data-id="${f.id}"> Extra Sauce +3</label></p>
-<p class="price">GHS ${f.price} <button class="btn" ${unavail?'disabled':''} onclick="addToCart(${f.id})">+ Add</button></p></div></div>`
-}).join('');
+<div class="modal-footer"><button id="btnPlaceOrder" class="btn btn-order w-100">Place Order - Pay on Delivery</button></div>
+</div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyBQctfAB42sS7ZYaoQGhImjRRCurPif3Y",
+  authDomain: "brainy-bites-gh.firebaseapp.com",
+  projectId: "brainy-bites-gh",
+  storageBucket: "brainy-bites-gh.firebasestorage.app",
+  messagingSenderId: "1053621074064",
+  appId: "1:1053621074064:web:cf2b3d4b0cda1db2c1d9ed",
+  measurementId: "G-PG4N9T79TC"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+let products = []; let currentProduct = null;
+async function loadProducts(){
+  const snap = await getDocs(collection(db,"products"));
+  if(snap.empty){
+    const defaults = [
+      {name:"Peanut Brittle",price:15,stock:50,desc:"Crunchy peanut snack",img:"🥜"},
+      {name:"Coconut Chips",price:12,stock:40,desc:"Toasted coconut",img:"🥥"},
+      {name:"Tigernut Mix",price:20,stock:30,desc:"Healthy tigernut",img:"🌰"}
+    ];
+    for(let p of defaults) await addDoc(collection(db,"products"),p);
+    return loadProducts();
+  }
+  products = snap.docs.map(d=>({id:d.id,...d.data()}));
+  render();
+  onSnapshot(collection(db,"products"), s=>{ products=s.docs.map(d=>({id:d.id,...d.data()})); render(); });
 }
-function addToCart(id){
-const f=foods.find(x=>x.id==id);
-const extras=[...document.querySelectorAll(`.extra[data-id='${id}']:checked`)].reduce((s,e)=>s+parseInt(e.value),0);
-cart.push({...f,finalPrice:f.price+extras});updateCart();
+function render(){
+  document.getElementById('products').innerHTML = products.map(p=>`
+    <div class="col-md-4"><div class="card product-card p-3 text-center">
+      <h1>${p.img||'🍪'}</h1><h5>${p.name}</h5><p>${p.desc||''}</p>
+      <h6>GHS ${p.price}</h6><small>${p.stock} left</small><br>
+      <button class="btn btn-order mt-2" onclick="openOrder('${p.id}')" ${p.stock<=0?'disabled':''}>${p.stock<=0?'Sold Out':'Order Now'}</button>
+    </div></div>`).join('');
 }
-function updateCart(){
-document.getElementById('cart-count').innerText=cart.length;
-document.getElementById('cart-items').innerHTML=cart.map((c,i)=>`${c.name} - GHS ${c.finalPrice} <button onclick="cart.splice(${i},1);updateCart()">x</button><br>`).join('');
-let sub=cart.reduce((s,c)=>s+c.finalPrice,0);
-let fee=parseInt(document.getElementById('area').value)||8;
-document.getElementById('fee').innerText=fee;
-document.getElementById('total').innerText=sub+fee;
+window.openOrder = (id)=>{
+  currentProduct = products.find(x=>x.id===id);
+  document.getElementById('mTitle').innerText=currentProduct.name;
+  document.getElementById('mPrice').innerText=currentProduct.price;
+  document.getElementById('mStock').innerText=currentProduct.stock;
+  document.getElementById('orderQty').value=1;
+  document.getElementById('orderQty').max=currentProduct.stock;
+  updateTotal();
+  new bootstrap.Modal(document.getElementById('orderModal')).show();
 }
-function toggleCart(){document.getElementById('cart').classList.toggle('hidden')}
-function placeOrder(){
-if(!cart.length)return alert('Cart empty');
-const order={id:'BB'+Date.now().toString().slice(-6),items:cart,total:document.getElementById('total').innerText,pay:document.getElementById('pay').value,schedule:document.getElementById('schedule').value||'ASAP',status:1,time:new Date().toLocaleString()};
-let orders=JSON.parse(localStorage.getItem('bb_orders')||'[]');
-orders.push(order);localStorage.setItem('bb_orders',JSON.stringify(orders));
-cart.forEach(c=>{c.ing.forEach(ing=>inventory[ing]--);c.stock--});
-document.getElementById('order-id').innerText='Order '+order.id+' - Receipt #R-'+order.id;
-alert('Order Placed! '+order.id+'\nReceipt generated\nSMS: Order received - being prepared');
-cart=[];updateCart();renderMenu();
-let step=1;const iv=setInterval(()=>{step++;document.querySelectorAll('.status span').forEach((el,i)=>el.classList.toggle('active',i<step));if(step>5)clearInterval(iv)},3000);
+function updateTotal(){
+  if(!currentProduct) return;
+  let q = parseInt(document.getElementById('orderQty').value)||1;
+  document.getElementById('mTotal').innerText = (q*currentProduct.price).toFixed(2);
 }
-renderMenu();
-</script>
-</body>
-</html>
+document.getElementById('orderQty').addEventListener('input',updateTotal);
+document.getElementById('btnPlaceOrder').onclick = async ()=>{
+  const name=document.getElementById('custName').value.trim();
+  const phone=document.getElementById('custPhone').value.trim();
+  const loc=document.getElementById('custLocation').value.trim();
+  const qty=parseInt(document.getElementById('orderQty').value);
+  if(!name||!phone) return alert('Enter name and phone');
+  if(qty<1||qty>currentProduct.stock) return alert('Invalid qty');
+  const btn=document.getElementById('btnPlaceOrder'); btn.disabled=true; btn.innerText='Placing...';
+  try{
+    await addDoc(collection(db,"orders"),{
+      productId: currentProduct.id, productName: currentProduct.name, price: currentProduct.price,
+      quantity: qty, total: qty*currentProduct.price, customerName: name, phone: phone, location: loc,
+      status: "pending", createdAt: serverTimestamp()
+    });
+    await updateDoc(doc(db,"products",currentProduct.id),{stock: currentProduct.stock - qty});
+    alert('✅ Order saved to CLOUD! We will call you.');
+    bootstrap.Modal.getInstance(document.getElementById('orderModal')).hide();
+  }catch(e){ alert('Error: '+e.message); }
+  btn.disabled=false; btn.innerText='Place Order - Pay on Delivery';
+};
+loadProducts();
+</script></body></html>
