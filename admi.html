@@ -1,0 +1,17 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width"><title>Brainy Bites Staff</title>
+<style>body{font-family:Arial;background:#f5f5f5;margin:0}header{background:#111;color:#fff;padding:12px;display:flex;justify-content:space-between}nav button{margin:4px;padding:8px 12px;border:none;background:#ff8c2a;border-radius:6px;font-weight:700;cursor:pointer}.card{background:#fff;padding:12px;border-radius:10px;margin:10px}.hidden{display:none}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:6px}.low{color:red;font-weight:800}</style></head><body>
+<header><b>Brainy Bites Staff Dashboard</b><div><select id="role"><option>Owner</option><option>Manager</option><option>Cashier</option><option>Kitchen</option><option>Rider</option></select> <a href="index.html" style="color:#ff8c2a">View Site</a></div></header>
+<div style="display:flex"><div style="width:220px;background:#222;color:#fff;min-height:100vh;padding:10px"><button onclick="show('orders')">Orders</button><br><br><button onclick="show('inventory')">Inventory</button><br><br><button onclick="show('reports')">Reports</button><br><br><div id="low" style="color:orange;margin-top:20px"></div></div>
+<div style="flex:1"><div id="orders" class="card"><h3>Live Orders + Delivery</h3><div id="olist"></div></div>
+<div id="inventory" class="card hidden"><h3>Inventory (rice,chicken,oil,flour...)</h3><div id="ilist"></div></div>
+<div id="reports" class="card hidden"><h3>Reports - Owner/Manager Only</h3><p id="rdata"></p></div></div></div>
+<script>
+let inv={rice:100,chicken:50,oil:30,flour:80,vegetables:40,beef:20,cheese:25,drinks:60,packaging:200};
+function show(id){document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');if(id=='orders')loadO();if(id=='inventory')loadI();if(id=='reports')loadR();}
+function loadO(){let o=JSON.parse(localStorage.getItem('bb_orders')||'[]');document.getElementById('olist').innerHTML=o.map(x=>`<div style="border:1px solid #ddd;padding:8px;margin:5px"><b>${x.id}</b> - GHS ${x.total} - ${x.pay} - ${['Received','Preparing','Ready','Out','Delivered'][x.status-1]} <button onclick="upd('${x.id}')">Next Status</button> <button onclick="del('${x.id}')">Cancel (5min limit)</button><br><small>${x.items.map(i=>i.name).join(', ')} | ${x.time} | ${x.schedule}</small></div>`).reverse().join('')||'No orders';}
+function upd(id){let o=JSON.parse(localStorage.getItem('bb_orders')||'[]');let f=o.find(x=>x.id==id);if(f){f.status=Math.min(5,f.status+1);localStorage.setItem('bb_orders',JSON.stringify(o));loadO();}}
+function del(id){let o=JSON.parse(localStorage.getItem('bb_orders')||'[]');o=o.filter(x=>x.id!=id);localStorage.setItem('bb_orders',JSON.stringify(o));loadO();}
+function loadI(){document.getElementById('ilist').innerHTML=Object.entries(inv).map(([k,v])=>`<p class="${v<10?'low':''}">${k}: ${v} ${v<10?'- LOW ALERT!':''} <button onclick="inv['${k}']+=20;loadI()">+20 Restock</button></p>`).join('');document.getElementById('low').innerHTML='Low: '+Object.entries(inv).filter(([k,v])=>v<10).map(([k])=>k).join(', ');}
+function loadR(){let o=JSON.parse(localStorage.getItem('bb_orders')||'[]');let tot=o.reduce((s,x)=>s+parseInt(x.total||0),0);document.getElementById('rdata').innerHTML=`Daily Sales: GHS ${tot}<br>Orders: ${o.length}<br>Best Seller: Checkcheck<br>Profit 35%: GHS ${Math.round(tot*0.35)}<br>Inventory Report: OK`;}
+loadO();
+</script></body></html>
